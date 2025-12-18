@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>随机视频展示</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .status {
+            margin: 10px 0;
+            color: #666;
+            font-size: 0.9rem;
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .video-container {
+            margin: 15px 0;
+            width: 100%;
+            max-width: 800px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+        video {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            background-color: #000;
+        }
+        .refresh-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1rem;
+            margin: 15px 0;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            min-width: 200px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        .refresh-btn:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+        .refresh-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 1.1rem;
+            color: #666;
+        }
+        /* 针对小屏幕设备的优化 */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.3rem;
+                margin-bottom: 10px;
+            }
+            .video-container {
+                padding: 10px;
+                border-radius: 8px;
+            }
+            .refresh-btn {
+                padding: 12px 24px;
+                font-size: 0.9rem;
+                min-width: 160px;
+            }
+            .loading {
+                height: 150px;
+                font-size: 1rem;
+            }
+            .status {
+                font-size: 0.8rem;
+            }
+        }
+        /* 针对大屏幕设备的优化 */
+        @media (min-width: 768px) {
+            body {
+                padding: 30px;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .video-container {
+                padding: 20px;
+            }
+            .refresh-btn {
+                padding: 18px 36px;
+                font-size: 1.1rem;
+                min-width: 240px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>随机视频展示</h1>
+    <div class="status" id="status">点击刷新按钮获取视频</div>
+    <div class="video-container" id="videoContainer">
+        <div class="loading" id="loading">加载中...</div>
+        <video id="videoPlayer" controls autoplay muted playsinline style="display: none;"></video>
+    </div>
+    <button class="refresh-btn" onclick="fetchVideo()">刷新视频</button>
+
+    <script>
+        // 初始加载视频
+        fetchVideo();
+
+        function fetchVideo() {
+            const status = document.getElementById('status');
+            const loading = document.getElementById('loading');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const videoContainer = document.getElementById('videoContainer');
+
+            // 显示加载状态
+            status.textContent = '正在请求视频数据...';
+            loading.style.display = 'flex';
+            videoPlayer.style.display = 'none';
+
+            // 请求API
+            fetch('https://v2.xxapi.cn/api/meinv')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        // 隐藏加载状态，显示视频
+                        loading.style.display = 'none';
+                        videoPlayer.style.display = 'block';
+                        
+                        // 更新视频源
+                        const videoUrl = data.data.trim(); // 去除可能的空格
+                        videoPlayer.src = videoUrl;
+                        videoPlayer.load();
+                        
+                        // 尝试自动播放
+                        videoPlayer.oncanplay = () => {
+                            videoPlayer.play().catch(error => {
+                                console.log('自动播放失败，可能是浏览器政策限制:', error);
+                                // 自动播放失败时不影响用户体验，用户可以手动点击播放
+                            });
+                        };
+                        
+                        status.textContent = `视频加载成功`;
+                    } else {
+                        status.textContent = `请求失败: ${data.msg}`;
+                        loading.textContent = `请求失败: ${data.msg}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('请求错误:', error);
+                    status.textContent = '请求出错，请检查网络连接';
+                    loading.textContent = '请求出错，请检查网络连接';
+                });
+        }
+    </script>
+</body>
+</html>
